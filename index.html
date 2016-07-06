@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>	
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="main.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+</head>
+<body>
+	<div class ="main-container">
+		<nav>
+			<ul style=" background-color:white; list-style-type: none;margin:0;padding:0;">
+				<li class="userButtons active_menu" id = "allButton">All</li>
+				<li class="userButtons" id = "onlineButton">Online</li>
+				<li class="userButtons" id = "offlineButton">Offline</li>
+			</ul>
+		</nav>
+		
+		<div id="search">
+			<input id="txt_search" type="text" class="form-control" placeholder="Search">
+		</div>
+		<div id="users">
+		</div>
+	</div>
+	<script   src="https://code.jquery.com/jquery-1.12.4.min.js"   integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="   crossorigin="anonymous"></script>	
+	<script type="text/javascript">
+	function twitchTvUserApi(){
+		var that = this;
+		this.currentUserList = 'all';
+		this.userList = ["freecodecamp", "storbeck", "terakilobyte", "habathcx","RobotCaleb","thomasballinger","noobs2ninjas","beohoff","medrybw","comster404"];
+		var isFinishedApiMain = false;
+		this.userObjectList = {};
+		this.timer_timeout = null;
+		var i = 0 , total = this.userList.length -1, errorFlag = false;
+
+		this.loadApi = function(){
+			this.loadApiMain();
+		}
+
+		this.loadApiMain = function(){		
+			isFinishedApiMain = false;
+			var channel;
+			that.userObjectList[this.userList[i]] = {};
+
+			$.getJSON('https://api.twitch.tv/kraken/streams/' + this.userList[i] + '?callback=?',function(val) {
+				var keys = Object.keys(val);
+				that.errorFlag =false;
+				that.userObjectList[that.userList[i]]["user_exists"] = true;
+
+				keys.forEach(function(key){
+					if(key === 'stream'){
+						if(val[key] === null){
+							that.userObjectList[that.userList[i]]["onlineflag"] = false;
+							that.userObjectList[that.userList[i]]["status"] = '';
+						}
+						else{
+							that.userObjectList[that.userList[i]]["onlineflag"] = true;
+							that.userObjectList[that.userList[i]]["status"] = val[key]["channel"]["status"];
+						}
+					}
+					else if(key === '_links'){
+						var linksKeys = Object.keys(val[key]);
+						if(linksKeys.indexOf("channel") > -1 ){
+							that.userObjectList[that.userList[i]]["channel_api"] = val[key]["channel"];
+							
+						}
+					}
+					else if(key === 'error') {
+						that.userObjectList[that.userList[i]]["onlineflag"] = false;
+							that.userObjectList[that.userList[i]]["status"] = 'account closed';
+							that.userObjectList[that.userList[i]]["channel_api"] = 'http://s.codepen.io/FreeCodeCamp/fullpage/undefined';
+							that.userObjectList[that.userList[i]]["user_exists"] = false;				
+							that.errorFlag = true;
+					}
+				});
+				that.loadApiChannel();				
+				
+				
+			});
+		
+			
+			
+		}
+		this.loadApiChannel = function(){
+			if(that.errorFlag === true){
+				that.userObjectList[that.userList[i]]["name"] = that.userList[i];
+				that.userObjectList[that.userList[i]]["display_name"] = that.userList[i];
+				that.userObjectList[that.userList[i]]["url"] = 'http://s.codepen.io/FreeCodeCamp/fullpage/undefined';
+				that.userObjectList[that.userList[i]]["logo"] = "http://www.engraversnetwork.com/files/placeholder.jpg";
+				that.errorFlag = false;
+				i++;
+				isFinishedApiMain = false;
+				if(i <= total){
+					that.loadApi();
+				}
+				else{
+					that.loadUi('all',$('#txt_search').val());
+					$('#txt_search').on('input propertychange paste',function(){
+						that.loadUi( that.currentUserList, $('#txt_search').val() );
+					} );
+				}
+			}
+			else{
+				$.getJSON(that.userObjectList[that.userList[i]]["channel_api"],function(data){
+				
+					that.userObjectList[that.userList[i]]["name"] = data["name"];
+					that.userObjectList[that.userList[i]]["display_name"] = data["display_name"];
+					that.userObjectList[that.userList[i]]["url"] = data["url"];
+					if(data["logo"] === null) {
+						that.userObjectList[that.userList[i]]["logo"] = "http://www.engraversnetwork.com/files/placeholder.jpg";
+					}
+					else{
+						that.userObjectList[that.userList[i]]["logo"] = data["logo"];
+					}
+					
+					i++;
+					isFinishedApiMain = false;
+					if(i <= total){
+						that.loadApi();
+					}
+					else{
+						that.loadUi('all',$('#txt_search').val());
+						$('#txt_search').on('input propertychange paste',function(){
+							that.loadUi( that.currentUserList, $('#txt_search').val() );
+						} );
+					}
+				});
+			}
+			
+		}
+
+		this.loadUi = function(flag,searchText){
+
+			var usersHtml = '';
+			this.userList.map(function(user){
+				var statusMessage = '<em>offline</em>';
+				if(flag === "all"){
+					that.currentUserList = "all";
+					if(that.userObjectList[user]["display_name"].toLowerCase().indexOf(searchText) > -1 || searchText === ''){
+
+						if(that.userObjectList[user]["onlineflag"] === true || that.userObjectList[user]["user_exists"] === false ){
+							statusMessage = '<em>'+ that.userObjectList[user]["status"] + '</em>';
+							// onlineLogo = '<i class="fa fa-check fa-2x"></i>';
+						}
+						usersHtml += 
+						"<div class ='media'> " +
+							"<a class ='pull-left' href=#><img class='media-object' src='" + that.userObjectList[user]['logo'] + "'>" +
+							"</a> " +
+							"<div class ='media-body'> " +
+								"<h4 class='media-heading'> <a href= " + that.userObjectList[user]['url'] + " target=_blank>" + that.userObjectList[user]['display_name'] + " </a> </h4> "  + 
+								
+								statusMessage +
+								
+							"</div> " +
+							
+						"</div>" ;
+						// "<div class='medi-status'> " + onlineLogo + "</div>" ;
+					}
+					
+				}
+				else if(flag === "online"){
+					that.currentUserList = "online";
+					if(that.userObjectList[user]["onlineflag"] === true && (that.userObjectList[user]["display_name"].toLowerCase().indexOf(searchText) > -1 || searchText === '') ){
+						usersHtml += 
+						"<div class ='media'> " +
+							"<a class ='pull-left' href=#><img class='media-object' src='" + that.userObjectList[user]['logo'] + "'>" +
+							"</a> " +
+							"<div class ='media-body'> " +
+								"<h4 class='media-heading'> <a href= " + that.userObjectList[user]['url'] + " target=_blank >" + that.userObjectList[user]['display_name'] + " </a> </h4> " +
+								'<em>'+ that.userObjectList[user]["status"] + '</em>' +
+							"</div> " +
+						"</div>";
+					}
+				}
+				else if(flag === "offline"){
+					that.currentUserList = "offline";
+					if(that.userObjectList[user]["user_exists"] === false ){
+							statusMessage = '<em>'+ that.userObjectList[user]["status"] + '</em>';
+					}
+					if(that.userObjectList[user]["onlineflag"] === false && (that.userObjectList[user]["display_name"].toLowerCase().indexOf(searchText) > -1 || searchText === '') ){
+						usersHtml += 
+						"<div class ='media'> " +
+							"<a class ='pull-left' href=#><img class='media-object' src='" + that.userObjectList[user]['logo'] + "'>" +
+							"</a> " +
+							"<div class ='media-body'> " +
+								"<h4 class='media-heading'> <a href= " + that.userObjectList[user]['url'] + " target=_blank >" + that.userObjectList[user]['display_name'] + " </a> </h4> " +
+								statusMessage +
+								
+							"</div> " +
+						"</div>";
+					}	
+				}
+				
+
+
+
+			});
+			$('#users').html(usersHtml);
+			$('.main-container').height( /* $('.main-container').height() + */ $('#users').height() + 140 );
+		}
+
+			
+			
+
+			
+			
+		
+		
+		
+	}
+	$(document).ready(function(){
+		$('#users').html('<i class="fa fa-spinner fa-spin"></i> Loading...');
+		var twitchTv = new twitchTvUserApi();
+		twitchTv.loadApi('all');
+
+		$('#allButton').click(function(){
+			$('#allButton').addClass('active_menu');
+			$('#onlineButton').removeClass('active_menu');
+			$('#offlineButton').removeClass('active_menu');
+			twitchTv.loadUi('all',$('#txt_search').val());
+		});
+
+		$('#onlineButton').click(function(){
+			$('#allButton').removeClass('active_menu');
+			$('#onlineButton').addClass('active_menu');
+			$('#offlineButton').removeClass('active_menu');
+			twitchTv.loadUi('online',$('#txt_search').val());
+		});
+
+		$('#offlineButton').click(function(){
+			$('#allButton').removeClass('active_menu');
+			$('#onlineButton').removeClass('active_menu');
+			$('#offlineButton').addClass('active_menu');
+			twitchTv.loadUi('offline',$('#txt_search').val());
+		});
+
+		
+	});
+	</script>
+
+</body>
+</html>

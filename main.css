@@ -1,0 +1,83 @@
+body{
+	background-color: white;
+}
+.main-container{
+	position: relative;
+	margin: 10px auto;
+	border:solid 1px #659EC7;
+	background-color: white;
+	width:300px;
+	height:150px;
+	background-color:white;
+
+}
+#user_container{
+	background-color: white;
+}
+nav {
+	width:600px;
+	float:left;
+}
+.userButtons{
+	float:left;
+	display:inline;
+	width:100px;
+	height: 40px;
+	text-align: center;
+    padding-top: 10px;
+    background-color:#659EC7;
+    color: white;
+    cursor: pointer;		
+    margin-bottom: 20px;
+}
+
+.active_menu {
+	position:relative;
+}
+
+.active_menu:after {
+z-index: 10;
+position: absolute;
+top: 100%;
+left: 50%;
+margin-left: -10px;
+margin-bottom: -15px;
+content:'';
+width: 0;
+height: 0;
+border-top: solid 10px #659EC7;	
+border-left: solid 10px transparent;
+border-right: solid 10px transparent;
+pointer-events:none;
+}
+#users{
+	float:left; 
+	background-color:white;
+	margin-top: 20px;
+	width: 278px !important;
+	padding: 10px;
+	overflow: hidden;
+}
+#onlineButton{
+	border-left: solid 1px white;
+	border-right: solid 1px white; 
+}
+#search{
+	padding-left: 10px;
+	padding-right: 10px;
+}
+.media{
+	width: 248px !important;
+	float: left;
+}
+.media-object{
+	height:50px;
+	width:50px;
+	border-radius:50%;
+}
+.media-body{
+	width: 148px !important;	
+}
+.media-heading{
+	width: 150px !important;
+}
